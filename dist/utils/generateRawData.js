@@ -9,15 +9,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const fileDataManipulation_1 = require("./utils/fileDataManipulation");
-function uploadFileToS3(file) {
+function generateRawData(file) {
     return __awaiter(this, void 0, void 0, function* () {
-        const fileBuffer = yield (0, fileDataManipulation_1.generateRawData)(file);
-        const bufData = yield (0, fileDataManipulation_1.buf)(fileBuffer);
-        const { ext, mime } = yield (0, fileDataManipulation_1.generateBuf)({ buf: fileDataManipulation_1.buf, file });
-        try {
-        }
-        catch (error) {
-        }
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                console.log(e);
+                const rawData = e.target.result;
+                resolve(rawData);
+            };
+            reader.readAsDataURL(file);
+        });
     });
 }
+exports.default = generateRawData;
