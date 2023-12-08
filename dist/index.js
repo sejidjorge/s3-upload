@@ -8,16 +8,48 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const fileDataManipulation_1 = require("./utils/fileDataManipulation");
-function uploadFileToS3(file) {
+const aws_sdk_1 = __importDefault(require("aws-sdk"));
+const uuid_1 = require("uuid");
+function uploadFileToS3({ file, accessKeyId, secretAccessKey, sessionToken, bucketRegion, bucketName, acl, onProgress, }) {
     return __awaiter(this, void 0, void 0, function* () {
         const fileBuffer = yield (0, fileDataManipulation_1.generateRawData)(file);
         const bufData = yield (0, fileDataManipulation_1.buf)(fileBuffer);
-        const { ext, mime } = yield (0, fileDataManipulation_1.generateBuf)({ buf: fileDataManipulation_1.buf, file });
+        const { ext, mime } = yield (0, fileDataManipulation_1.generateBuf)({ bufData, file });
         try {
+            aws_sdk_1.default.config.update({
+                accessKeyId,
+                secretAccessKey,
+                sessionToken,
+            });
+            aws_sdk_1.default.config.setPromisesDependency(null);
+            const s3 = new aws_sdk_1.default.S3({
+                region: bucketRegion,
+            });
+            const params = {
+                ACL: acl,
+                Body: bufData,
+                Bucket: bucketName,
+                ContentType: mime,
+                Key: `${(0, uuid_1.v4)()}.${ext}`,
+            };
+            const uploadPromise = s3.upload(params);
+            if (onProgress) {
+                uploadPromise.on('httpUploadProgress', (event) => {
+                    const progressUpld = parseInt(Math.round((event.loaded * 100) / event.total));
+                    onProgress(progressUpld);
+                });
+            }
+            yield uploadPromise.promise();
+            console.log('Success upload');
         }
         catch (error) {
+            console.error(error);
         }
     });
 }
+exports.default = uploadFileToS3;

@@ -11,7 +11,7 @@
   "scripts": {
     "prepare": "npm run build",
     "build": "tsc",
-    "lint": "eslint . --fix",
+    "lint": "eslint --fix",
     "lint-staged": "lint-staged",
     "husky": "husky install"
   },
@@ -31,6 +31,7 @@
   ],
   "license": "ISC",
   "devDependencies": {
+    "@types/axios": "^0.14.0",
     "@types/node": "^20.10.3",
     "@types/uuid": "^9.0.7",
     "@typescript-eslint/eslint-plugin": "^6.13.2",
@@ -47,6 +48,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.1512.0",
+    "axios": "^1.6.2",
     "uuid": "^9.0.1"
   }
 }

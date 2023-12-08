@@ -2,46 +2,62 @@ import { buf, generateBuf, generateRawData } from './utils/fileDataManipulation'
 import AWS from 'aws-sdk';
 import { v4 as uuidv4 } from 'uuid';
 
-async function uploadFileToS3(file: any) {
-  let progress = 0;
-  let returnData = {
-    success: false,
-    message: '',
-    data: null,
-    error: null,
-  };
+interface uploadFileToS3Types {
+  file: any;
+  accessKeyId: string;
+  secretAccessKey: string;
+  sessionToken: string;
+  bucketRegion: string;
+  bucketName: string;
+  acl: string;
+}
+
+export default async function uploadFileToS3({
+  file,
+  accessKeyId,
+  secretAccessKey,
+  sessionToken,
+  bucketRegion,
+  bucketName,
+  acl,
+  onProgress,
+}: uploadFileToS3Types & { onProgress?: (progress: number) => void }) {
   const fileBuffer = await generateRawData(file);
   const bufData = await buf(fileBuffer);
   const { ext, mime } = await generateBuf({ bufData, file });
+
   try {
     AWS.config.update({
-      accessKeyId: 'accessKeyId',
-      secretAccessKey: 'secretAccessKey',
-      sessionToken: 'sessionToken',
+      accessKeyId,
+      secretAccessKey,
+      sessionToken,
     });
     AWS.config.setPromisesDependency(null);
+
     const s3 = new AWS.S3({
-      region: 'bucketRegion',
+      region: bucketRegion,
     });
+
     const params = {
-      ACL: null,
+      ACL: acl,
       Body: bufData,
-      Bucket: 'bucketName',
+      Bucket: bucketName,
       ContentType: mime,
       Key: `${uuidv4()}.${ext}`,
-      region: 'bucketRegion',
     };
-    await s3
-      .upload(params)
-      .on('httpUploadProgress', (event) => {
+
+    const uploadPromise = s3.upload(params);
+
+    if (onProgress) {
+      uploadPromise.on('httpUploadProgress', (event) => {
         const progressUpld = parseInt(Math.round((event.loaded * 100) / event.total));
-        progress = progressUpld;
-      })
-      .promise()
-      .then((resp: any) => {
-        console.log('sucess upload', resp);
+        onProgress(progressUpld);
       });
+    }
+
+    await uploadPromise.promise();
+    console.log('Success upload');
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
 }
